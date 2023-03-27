@@ -5,6 +5,7 @@
 #include <queue>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 
 struct node
 {
@@ -38,30 +39,68 @@ struct node
 std::ostream &operator<<(std::ostream &, node *);
 std::ostream &operator<<(std::ostream &, const std::vector<bool> &);
 
+/// @brief Append contents of second vector to first
+/// @tparam T The element type
+/// @param  first reference to the first vector
+/// @param  second const reference to the second vector
 template <typename T>
 void append(std::vector<T> &, const std::vector<T> &);
 
+/// @brief Build a huffman tree from given data string
+/// @param  data The string to encode
+/// @return The root node of the huffman tree
 node *build_huffman_tree(const std::string &);
+/// @brief Build the codebook for a given huffman tree
+/// @param  root The root node of the huffman tree
+/// @return The codebook as a map of unsigned char -> std::vector<bool>
 std::map<unsigned char, std::vector<bool>> build_codebook(node *);
 
+/// @brief Encode a huffman tree into a sequence of bits.
+/// @param  root The root of the huffman tree
+/// @return The encoded tree as a std::vector<bool>
 std::vector<bool> encode_tree(node *);
+/// @brief Decode a huffman tree from a sequence of bits.
+/// @tparam bool_iterator Iteratortype that returns bool
+/// @param  it Reference to an iterator of the bit sequence e.g. std::vector<bool>.begin()
+/// @return The root of the decoded tree
 template <typename bool_iterator>
 node *decode_tree(bool_iterator &);
 
+/// @brief Encode the data into huffman code
+/// @param  data The string to encode
+/// @param  codebook The codebook with which to encode
+/// @return The encoded data as a std::vecor<bool>
 std::vector<bool> encode_data(const std::string &, const std::map<unsigned char, std::vector<bool>> &);
+/// @brief Decode the data from huffman code
+/// @tparam bool_iterator Iteratortype that returns bool
+/// @param  it Reference to an iterator of the bit sequence e.g. std::vector<bool>.begin()
+/// @param  root The root of the huffman tree
+/// @param  size The size of the decoded string
+/// @return The decoded data as a string
 template <typename bool_iterator>
 std::string decode_data(bool_iterator &, node *, size_t);
 
+/// @brief Encode the size into 4 bytes
+/// @param  size The size data
+/// @return The bytes representing the encoded size data
 std::string encode_size(size_t);
+/// @brief Decode the size from 4 bytes
+/// @param  data The string whose head represents the size
+/// @return The decoded size data
 size_t decode_size(const std::string &);
 
+/// @brief Convert bits to bytes
+/// @param  bits A vector of bits of size 8*n
+/// @return The reconstructed bytes as a string
 std::string bits_to_bytes(const std::vector<bool> &);
+/// @brief Convert bytes to bits
+/// @param  bytes A string of byte values
+/// @return The binary data as a std::vector<bool>
 std::vector<bool> bytes_to_bits(const std::string &);
 
 std::string huffman::encode(const std::string &data)
 {
     node *root = build_huffman_tree(data);
-    std::cout << root << "\n";
     std::map<unsigned char, std::vector<bool>> code_book = build_codebook(root);
     std::vector<bool> encoded_tree = encode_tree(root);
     std::vector<bool> encoded_data = encode_data(data, code_book);
@@ -84,8 +123,33 @@ std::string huffman::decode(const std::string &data)
     auto it = bits.begin();
     it += 32;
     node *root = decode_tree(it);
-    std::cout << root << "\n";
     return decode_data(it, root, size);
+}
+
+void huffman::encode_file(const char *filename, const char *output)
+{
+    std::ifstream iff{filename};
+    std::ostringstream buffer;
+    buffer << iff.rdbuf();
+    std::string decoded_data = buffer.str();
+    std::cout << "Encoding " << decoded_data.size() << " bytes of data\n";
+    std::string encoded_data = huffman::encode(decoded_data);
+    std::cout << "Encoded " << encoded_data.size() << " bytes of data\n";
+    std::ofstream off{output, std::ofstream::binary};
+    off << encoded_data;
+}
+
+void huffman::decode_file(const char *filename, const char *output)
+{
+    std::ifstream iff{filename, std::ifstream::binary};
+    std::ostringstream buffer;
+    buffer << iff.rdbuf();
+    std::string encoded_data = buffer.str();
+    std::cout << "Decoding " << encoded_data.size() << " bytes of data\n";
+    std::string decoded_data = huffman::decode(encoded_data);
+    std::cout << "Decoded " << decoded_data.size() << " bytes of data\n";
+    std::ofstream off{output};
+    off << decoded_data;
 }
 
 template <typename T>
@@ -177,7 +241,7 @@ std::vector<bool> encode_character(unsigned char character)
 {
     std::vector<bool> bits;
     for (int i = 0; i < 8; ++i)
-        bits.push_back(character & (1 << i));
+        bits.push_back(character & (1 << (7 - i)));
     return bits;
 }
 
@@ -185,7 +249,7 @@ unsigned char decode_character(const std::vector<bool> &bits)
 {
     unsigned char character = 0;
     for (int i = 0; i < 8; ++i)
-        character += bits[i] ? 1 << i : 0;
+        character += bits[i] ? 1 << (7 - i) : 0;
     return character;
 }
 
