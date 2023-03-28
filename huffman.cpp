@@ -253,11 +253,11 @@ unsigned char decode_character(const std::vector<bool> &bits)
     return character;
 }
 
-std::vector<bool> encode_int(unsigned int character)
+std::vector<bool> encode_int(unsigned int size)
 {
     std::vector<bool> bits;
     for (int i = 0; i < 32; ++i)
-        bits.push_back(character & (1ull << i));
+        bits.push_back(size & (1ull << i));
     return bits;
 }
 

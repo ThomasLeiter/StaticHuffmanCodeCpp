@@ -8,6 +8,7 @@ void print_binary(unsigned char character)
     {
         std::cout << ((character & 1 << (7 - i)) ? "1" : "0");
     }
+    std::cout << " ";
 }
 
 void print_bits(const std::string &str)
