@@ -104,6 +104,7 @@ std::string huffman::encode(const std::string &data)
     std::map<unsigned char, std::vector<bool>> code_book = build_codebook(root);
     std::vector<bool> encoded_tree = encode_tree(root);
     std::vector<bool> encoded_data = encode_data(data, code_book);
+    delete root;
     std::vector<bool> huffman_code;
     append(huffman_code, encoded_tree);
     append(huffman_code, encoded_data);
@@ -123,7 +124,9 @@ std::string huffman::decode(const std::string &data)
     auto it = bits.begin();
     it += 32;
     node *root = decode_tree(it);
-    return decode_data(it, root, size);
+    std::string decoded_string = decode_data(it, root, size);
+    delete root;
+    return decoded_string;
 }
 
 void huffman::encode_file(const char *filename, const char *output)
